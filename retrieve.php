@@ -97,7 +97,10 @@ try {
 	
 	$curMsg = $db->getMaxArticleId($settings_nntp_hdr['host']);
 	if ($curMsg != 0) {
-		$curMsg = $retriever->searchMessageId($db->getMaxMessageId('headers'));
+		$curMsgTemp = $retriever->searchMessageId($db->getMaxMessageId('headers'));
+		if ($curMsg > $curMsgTemp) {
+			$curMsg = $curMsgTemp;
+		} # if
 	} # if
 
 	$newSpotCount = $retriever->loopTillEnd($curMsg, $settings->get('retrieve_increment'));
@@ -142,7 +145,10 @@ try {
 
 		$curMsg = $db->getMaxArticleId('comments');
 		if ($curMsg != 0) {
-			$curMsg = $retriever->searchMessageId($db->getMaxMessageId('comments'));
+			$curMsgTemp = $retriever->searchMessageId($db->getMaxMessageId('comments'));
+			if ($curMsg > $curMsgTemp) {
+				$curMsg = $curMsgTemp;
+			} # if
 		} # if
 
 		$newCommentCount = $retriever->loopTillEnd($curMsg, $settings->get('retrieve_increment'));
@@ -171,9 +177,9 @@ catch(Exception $x) {
 	die();
 } # catch
 
-## Comments
+## Reports
 try {
-	$newCommentCount = 0;
+	$newReportCount = 0;
 	if ($settings->get('retrieve_reports')) {
 		$retriever = new SpotRetriever_Reports($settings_nntp_hdr, 
 												$db,
@@ -183,10 +189,13 @@ try {
 
 		$curMsg = $db->getMaxArticleId('reports');
 		if ($curMsg != 0) {
-			$curMsg = $retriever->searchMessageId($db->getMaxMessageId('reports'));
+			$curMsgTemp = $retriever->searchMessageId($db->getMaxMessageId('reports'));
+			if ($curMsg > $curMsgTemp) {
+				$curMsg = $curMsgTemp;
+			} # if
 		} # if
 
-		$newCommentCount = $retriever->loopTillEnd($curMsg, $settings->get('retrieve_increment'));
+		$newReportCount = $retriever->loopTillEnd($curMsg, $settings->get('retrieve_increment'));
 		$retriever->quit();
 	} # if
 }
@@ -242,7 +251,7 @@ try {
 
 # Verstuur notificaties
 $spotsNotifications = new SpotNotifications($db, $settings, $userSession);
-$spotsNotifications->sendRetrieverFinished($newSpotCount, $newCommentCount);
+$spotsNotifications->sendRetrieverFinished($newSpotCount, $newCommentCount, $newReportCount);
 
 if ($req->getDef('output', '') == 'xml') {
 	echo "</xml>";

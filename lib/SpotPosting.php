@@ -33,6 +33,9 @@ class SpotPosting {
 		if (strlen($comment['body']) < 2) {
 			$errorList[] = array('postcomment_bodytooshort', array());
 		} # if
+		if (strlen($comment['body']) > 9000) {
+			$errorList[] = array('postcomment_bodytoolong', array());
+		} # if
 		
 		# Rating mag niet uit de range vallen
 		if (($comment['rating'] > 10) || ($comment['rating'] < 0)) {
@@ -81,9 +84,11 @@ class SpotPosting {
 		$errorList = array();
 		$hdr_newsgroup = $this->_settings->get('hdr_group');
 		$bin_newsgroup = $this->_settings->get('nzb_group');
-		
+
+/*
 		$hdr_newsgroup = 'alt.test';
 		$bin_newsgroup = 'alt.test';
+*/
 
 		# If the hashcash doesn't match, we will never post it
 		if (substr(sha1('<' . $spot['newmessageid'] . '>'), 0, 4) != '0000') {
@@ -110,10 +115,13 @@ class SpotPosting {
 					  	       'height' => $tmpGdImageSize[1]);
 		} # if
 
-		# Body cannot be empty or very short
+		# Body cannot be empty, very short or too long
 		$spot['body'] = trim($spot['body']);
 		if (strlen($spot['body']) < 30) {
 			$errorList[] = array('postspot_bodytooshort', array());
+		} # if
+		if (strlen($spot['body']) > 9000) {
+			$errorList[] = array('postspot_bodytoolong', array());
 		} # if
 
 		# Title cannot be empty or very short
@@ -175,14 +183,15 @@ class SpotPosting {
 		 * our list of subcategories
 		 */
 		$subCatSplitted = array('a' => array(), 'b' => array(), 'c' => array(), 'd' => array(), 'z' => array());
+
 		foreach($spot['subcatlist'] as $subCat) {
-			$subCatLetter = substr($subCat, -2, 1);
 			$subcats = explode('_', $subCat);
+			$subCatLetter = substr($subcats[2], 0, 1);
 			
 			$subCatSplitted[$subCatLetter][] = $subCat;
 			
 			if (!isset(SpotCategories::$_categories[$spot['category']][$subCatLetter][substr($subcats[2], 1)])) {
-				$errorList[] = array('postspot_invalidsubcat', array($subCat . ' ' . $subCatLetter . ' ' . substr($subcats[2], 1)));
+				$errorList[] = array('postspot_invalidsubcat', array($subCat . ' !! ' . $subCatLetter . ' !! ' . substr($subcats[2], 1)));
 			} # if
 		} # foreach	
 
@@ -227,7 +236,7 @@ class SpotPosting {
 		if (count($spot['subcatlist']) < 2) {
 			$errorList[] = array('postspot_toofewcategories', count($spot['subcatlist']));
 		} # if
-		
+
 		# en post daadwerkelijk de spot
 		if (empty($errorList)) {
 			/* 
@@ -265,7 +274,7 @@ class SpotPosting {
 										   $spot);
 			$this->_db->addPostedSpot($user['userid'], $dbSpot, $spotXml);
 		} # if
-		
+
 		return $errorList;
 	} # postSpot
 	

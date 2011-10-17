@@ -11,7 +11,7 @@
 					<?php } ?>
 				</div>
 
-				<div class="logininfo"><p><a onclick="toggleSidebarPanel('.userPanel')" class="user" title='Open "Gebruikers Paneel"'>
+				<div class="logininfo"><p><a onclick="toggleSidebarPanel('.userPanel')" title='Open "Gebruikers Paneel"'>
 <?php if ($currentSession['user']['userid'] == SPOTWEB_ANONYMOUS_USERID) { ?>
 	<?php if ($tplHelper->allowed(SpotSecurity::spotsec_perform_login, '')) { ?>
 					Inloggen
@@ -20,6 +20,10 @@
 					<?php echo $currentSession['user']['firstname']; ?>
 <?php } ?>
 				</a></p></div>
+
+<?php if ($tplHelper->allowed(SpotSecurity::spotsec_post_spot, '')) { ?>
+				<div class="addspot"><p><a onclick="return openDialog('editdialogdiv', 'Spot toevoegen', '<?php echo $tplHelper->getPageUrl('postspot'); ?>', 'newspotform', function() { new spotPosting().postNewSpot(this.form, postSpotUiStart, postSpotUiDone); return false; }, true, null);" title='Spot toevoegen'>Spot toevoegen</a></p></div>
+<?php } ?>
 
 				<span class="scroll"><input type="checkbox" name="filterscroll" id="filterscroll" value="Scroll" title="Wissel tussen vaste en meescrollende sidebar"><label>&nbsp;</label></span>
 
@@ -33,8 +37,6 @@
 	// Voor uitgebreide filters tonen we een lijst met op dat moment actieve filters
 	$searchType = 'Titel'; 
 	$searchText = '';
-	$sortType = 'stamp';
-	$sortOrder = 'DESC';
 	
 	# Zoek nu een filter op dat eventueel matched, dan gebruiken we die. We willen deze 
 	# boom toch doorlopen ook al is er meer dan 1 filter, anders kunnen we de filesize
@@ -57,6 +59,14 @@
 	$tmpSort = $tplHelper->getActiveSorting();
 	$sortType = strtolower($tmpSort['friendlyname']);
 	$sortOrder = strtolower($tmpSort['direction']);
+	
+	/*
+	 * Als er geen sorteer volgorde opgegeven is door de user, dan gebruiken we de user
+	 * preference om een sorteerveld te pakken
+	 */	
+	if (empty($sortType)) {
+		$sortType = $currentSession['user']['prefs']['defaultsortfield'];
+	} # if
 
 	# als er meer dan 1 filter is, dan tonen we dat als een lijst
 	if (count($parsedsearch['filterValueList']) > 1) {
@@ -160,7 +170,7 @@
 						<br>
 						<h4>Filters</h4>
 						<br>
-						<a onclick="return openDialog('editdialogdiv', 'Voeg een filter toe', '?page=render&amp;tplname=editfilter&amp;data[isnew]=true<?php echo $tplHelper->convertTreeFilterToQueryParams() .$tplHelper->convertTextFilterToQueryParams() . $tplHelper->convertSortToQueryParams(); ?>', 'editfilterform', true, null); " class="greyButton">Sla opdracht op als filter</a>
+						<a onclick="return openDialog('editdialogdiv', 'Voeg een filter toe', '?page=render&amp;tplname=editfilter&amp;data[isnew]=true<?php echo $tplHelper->convertTreeFilterToQueryParams() .$tplHelper->convertTextFilterToQueryParams() . $tplHelper->convertSortToQueryParams(); ?>', 'editfilterform', null, true, null); " class="greyButton">Sla opdracht op als filter</a>
 				</div>
 			</form>
 <?php } # if perform search ?>
@@ -256,7 +266,7 @@
 ?>
 					<li> <a class="filter <?php echo " " . $quicklink[3]; if (parse_url($tplHelper->makeSelfUrl("full"), PHP_URL_QUERY) == parse_url($tplHelper->makeBaseUrl("full") . $quicklink[2], PHP_URL_QUERY)) { echo " selected"; } ?>" href="<?php echo $quicklink[2]; ?>">
 					<a class="filter <?php if (parse_url($tplHelper->makeSelfUrl("full"), PHP_URL_QUERY) == parse_url($tplHelper->makeBaseUrl("full") . $quicklink[2], PHP_URL_QUERY)) { echo " selected"; } ?>" href="<?php echo $quicklink[2]; ?>">
-					<img src='<?php echo $quicklink[1]; ?>' alt='<?php echo $quicklink[0]; ?>'><?php echo $quicklink[0]; if ($newCount) { echo "<span class='newspots'>".$newCount."</span>"; } ?></a>
+					<span class='spoticon spoticon-<?php echo str_replace('images/icons/', '', str_replace('.png', '', $quicklink[1])); ?>'>&nbsp;</span><?php echo $quicklink[0]; if ($newCount) { echo "<span class='newspots'>".$newCount."</span>"; } ?></a>
 <?php 	}
 	} ?>
 					</ul>
@@ -286,14 +296,14 @@
 			
 			# Output de HTML
 			echo '<li class="'. $tplHelper->filter2cat($filter['tree']) .'">';
-			echo '	<a class="filter ' . $filter['title']; 
+			echo '	<a class="filter ' . $filter['title'];
 			
 			if ($selfUrl == $strFilter) { 
 				echo ' selected';
 			} # if
 			
 			echo '" href="' . $strFilter . '">';
-			echo '<img src="images/icons/' . $filter['icon'] . '" alt="' . $filter['title'] . '">' . $filter['title'];
+			echo '<span class="spoticon spoticon-' . str_replace('.png', '', $filter['icon']) . '">&nbsp;</span>' . $filter['title'];
 			if ($newCount) { 
 				echo "<span onclick=\"gotoNew('".$strFilter."')\" class='newspots' title='Laat nieuwe spots in filter &quot;".$filter['title']."&quot; zien'>$newCount</span>"; 
 			} # if 
@@ -305,7 +315,7 @@
 			
 			echo '</a>';
 			
-			# Als er children zijn, output die ool
+			# Als er children zijn, output die ook
 			if (!empty($filter['children'])) {
 				echo '<ul class="filterlist subfilterlist">';
 				processFilters($tplHelper, $count_newspots, $filter['children']);
@@ -325,7 +335,6 @@
 <?php if ($tplHelper->allowed(SpotSecurity::spotsec_view_spotcount_total, '')) { ?>
 						<li class="info"> Laatste update: <?php echo $tplHelper->formatDate($tplHelper->getLastSpotUpdates(), 'lastupdate'); ?> </li>
 <?php } ?>
-
 <?php 
 		if ($currentSession['user']['userid'] > SPOTWEB_ADMIN_USERID) {
 			if ( ($tplHelper->allowed(SpotSecurity::spotsec_retrieve_spots, '')) && ($tplHelper->allowed(SpotSecurity::spotsec_consume_api, ''))) { ?>

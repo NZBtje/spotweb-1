@@ -329,6 +329,7 @@ class SpotUserSystem {
 		# Definieer een aantal arrays met valid settings
 		$validDateFormats = array('human', '%a, %d-%b-%Y (%H:%M)', '%d-%m-%Y (%H:%M)');
 		$validTemplates = array('we1rdo');
+		$validDefaultSorts = array('', 'stamp');
 		
 		# Controleer de per page setting
 		$prefs['perpage'] = (int) $prefs['perpage'];
@@ -343,6 +344,10 @@ class SpotUserSystem {
 		
 		if (in_array($prefs['template'], $validTemplates) === false) { 	
 			$errorList[] = array('validateuser_invalidpreference', array('template'));
+		} # if
+
+		if (in_array($prefs['defaultsortfield'], $validDefaultSorts) === false) { 	
+			$errorList[] = array('validateuser_invalidpreference', array('defaultsortfield' . $prefs['defaultsortfield']));
 		} # if
 		
 		# Als nzbhandling instellingen totaal niet opgegeven zijn, defaulten we naar disable
@@ -384,7 +389,7 @@ class SpotUserSystem {
 			$prefs['notifications'][$notifProvider]['events']['user_added'] = (isset($prefs['notifications'][$notifProvider]['events']['user_added'])) ? true : false;
 		}
 
-		# Twitter tokens komen niet binnen via het form, maar mogen perse niet weggegooid worden.
+		# Twitter tokens komen niet binnen via het form, maar mogen per se niet weggegooid worden.
 		$prefs['notifications']['twitter']['screen_name'] = $currentPrefs['notifications']['twitter']['screen_name'];
 		$prefs['notifications']['twitter']['access_token'] = $currentPrefs['notifications']['twitter']['access_token'];
 		$prefs['notifications']['twitter']['access_token_secret'] = $currentPrefs['notifications']['twitter']['access_token_secret'];
@@ -394,6 +399,15 @@ class SpotUserSystem {
 		# We willen geen megabytes aan custom CSS opslaan, dus controleer dat dit niet te groot is
 		if (strlen($prefs['customcss'] > 1024 * 10)) { 
 			$errorList[] = array('validateuser_invalidpreference', array('customcss'));
+		} # if		
+
+		# We willen geen megabytes aan defalt newspot body of tag opslaan
+		if (strlen($prefs['newspotdefault_tag'] > 90)) { 
+			$errorList[] = array('validateuser_invalidpreference', array('newspotdefault_tag'));
+		} # if		
+		
+		if (strlen($prefs['newspotdefault_body'] > 9000)) { 
+			$errorList[] = array('validateuser_invalidpreference', array('newspotdefault_body'));
 		} # if		
 		
 		# als men runcommand of save wil, moet er een local_dir opgegeven worden
@@ -407,6 +421,13 @@ class SpotUserSystem {
 		if ($prefs['notifications']['growl']['enabled']) {
 			if (empty($prefs['notifications']['growl']['host'])) {
 				$errorList[] = array('validateuser_invalidpreference', array('growl host'));
+			} # if
+		} # if
+
+		# als men Notify My Android wil gebruiken, moet er een apikey opgegeven worden
+		if ($prefs['notifications']['nma']['enabled']) {
+			if (empty($prefs['notifications']['nma']['api'])) {
+				$errorList[] = array('validateuser_invalidpreference', array('Notify My Android api'));
 			} # if
 		} # if
 

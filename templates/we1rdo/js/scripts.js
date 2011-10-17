@@ -28,6 +28,8 @@ $(function(){
 			return true;
 		}
     });	
+	
+	newspotChangeCategory();
 });
 
 // createBaseURL
@@ -120,10 +122,11 @@ function refreshTab(tabName) {
  * title = title van de dialogbox
  * url = url van de content waar deze dialog geladen zou moeten worden
  * formname = naam van het formulier, dit is nodig om de submit buttons te attachen
+ * buttonClick = functie welke aangeroepen moe worden als men op de submit button clickt
  * autoClose = moet het formulier automatisch sluiten als het resultaat 'success' was?
  * closeCb = functie welke aangeroepen moet worden als de dialog gesloten wordt
  */
-function openDialog(divid, title, url, formname, autoClose, closeCb) {
+function openDialog(divid, title, url, formname, buttonClick, autoClose, closeCb) {
 	var $dialdiv = $("#" + divid);
   
     if (!$dialdiv.is(".ui-dialog-content")) {
@@ -147,50 +150,57 @@ function openDialog(divid, title, url, formname, autoClose, closeCb) {
 	$("span.ui-dialog-title").text(title);
 	
 	/* submit button handler */
-	var buttonClick = function() {
-		// In deze context is 'this' de submit button waarop gedrukt is,
-		// dus die data voegen we gewoon aan de post data toe.
-		var formdata = $(this).attr("name") + "=" + $(this).val();  
-		formdata = $(this.form).serialize() + "&" + formdata;
-		
-		// post de data
-		$.ajax({
-			type: "POST",
-			url: this.form.action,
-			dataType: "xml",
-			data: formdata,
-			success: function(xml) {
-				var $dialdiv = $("#"+divid)
-				var result = $(xml).find('result').text();
-				
-				if ((result == 'success') && (autoClose)) {
-					$dialdiv.empty();
-					$dialdiv.dialog('close');
+	if (!buttonClick) {
+		var buttonClick = function() {
+			// If we need to call a pre-POST callback, run it here
+			// so if any form modification is done we also post it
+			if (prepostCb) {
+				prepostCb();
+			} // if
+			
+			// In deze context is 'this' de submit button waarop gedrukt is,
+			// dus die data voegen we gewoon aan de post data toe.
+			var formdata = $(this).attr("name") + "=" + $(this).val();  
+			formdata = $(this.form).serialize() + "&" + formdata;
+			
+			// post de data
+			$.ajax({
+				type: "POST",
+				url: this.form.action,
+				dataType: "xml",
+				data: formdata,
+				success: function(xml) {
+					var $dialdiv = $("#"+divid)
+					var result = $(xml).find('result').text();
 					
-					if (closeCb) {
-						closeCb();
-					} // if
-				} else {						
-					/* We herladen de content zodat eventuele dialog wijzigingen duidelijk zijn */
-					if (!autoClose) {
-						loadDialogContent(false);
-					} // if
+					if ((result == 'success') && (autoClose)) {
+						$dialdiv.empty();
+						$dialdiv.dialog('close');
+						
+						if (closeCb) {
+							closeCb();
+						} // if
+					} else {						
+						/* We herladen de content zodat eventuele dialog wijzigingen duidelijk zijn */
+						if (!autoClose) {
+							loadDialogContent(false);
+						} // if
 
-					// voeg nu de errors in de html
-					var $formerrors = $dialdiv.find("ul.formerrors");
-					$formerrors.empty();
+						// voeg nu de errors in de html
+						var $formerrors = $dialdiv.find("ul.formerrors");
+						$formerrors.empty();
 
-					// zet de errors van het formulier in de errorlijst
-					$('errors', xml).each(function() {
-						$formerrors.append("<li>" + $(this).text() + "</li>");
-					}); // each
-				} // if post was not succesful
-			} // success()
-		}); // ajax call om de form te submitten
-		
-		return false; // standaard button submit supressen
-	} // buttonClick
-
+						// zet de errors van het formulier in de errorlijst
+						$('errors', xml).each(function() {
+							$formerrors.append("<li>" + $(this).text() + "</li>");
+						}); // each
+					} // if post was not succesful
+				} // success()
+			}); // ajax call om de form te submitten
+			
+			return false; // standaard button submit supressen
+		} // buttonClick
+	} // if not defined
 	
 	/*
 	 * definieer een dialog loader functie welke tegelijkertijd
@@ -320,23 +330,6 @@ function postReportForm() {
 		new spotPosting().postReport(this,postReportUiStart,postReportUiDone); 
 		return false;
 	});	
-}
-
-function postNewspotForm() {
-	$('form.newspotform').submit(function(e) {
-		e.preventDefault(); 
-
-		new spotPosting().postNewSpot(this,postReportUiStart,postReportUiDone); 
-		
-		return false;
-	});
-	
-/*	
-	$("form.newspotform").submit(function(){ 
-		new spotPosting().postNewSpot(this,postReportUiStart,postReportUiDone); 
-		return false;
-	});	
-*/
 }
 
 // Load post comment form
@@ -1450,23 +1443,29 @@ function bindSelectedSortableFilter() {
 
 function newspotChangeCategory() {
 	var elm = $("#newspotcategoryselectlist");
-	if (!elm) return ;
+	if ((!elm) || (!elm[0])) return ;
 	
 	if (elm[0].value >= 2) {
-		$("#newspotcategorytypeselectlist").attr('disabled', 'disabled').hide();
-		$("label[for='newspotform[subcatz]']").hide();
+		$(".newspotcategorytypeselectlist").attr('disabled', 'disabled').hide();
+		$("div#subcatzselector-cat0").hide();
+		$("div#subcatzselector-cat1").hide();
+		subcatz = '*';
 	} else {
-		$("#newspotcategorytypeselectlist").removeAttr('disabled').show();
-		$("label[for='newspotform[subcatz]']").show();
+		$(".newspotcategorytypeselectlist").removeAttr('disabled').show();
+		if (elm[0].value == 0) {
+			var subcatz = $("#newspotcategory0typeselectlist")[0].value;
+			$("div#subcatzselector-cat0").show();
+			$("div#subcatzselector-cat1").hide();
+		} else {
+			var subcatz = $("#newspotcategory1typeselectlist")[0].value;
+			$("div#subcatzselector-cat0").hide();
+			$("div#subcatzselector-cat1").show();
+		} // else			
 	} // else
 	
-	/* Get the selected z-type variant */
-	var subcatz = $("#newspotcategorytypeselectlist")[0].value;
-	if (!$("#newspotcategorytypeselectlist").is(":visible")) {
-		subcatz = '*';
-	} // if
-
 	/* Change the json url, and reload the tree */
-	$("div#newspotcatselecttree").dynatree('option', 'initAjax', { url: ('?page=catsjson&category=' + elm[0].value + '&subcatz=' + subcatz + '&disallowstrongnot=1') });
-	$("div#newspotcatselecttree").dynatree('getTree').reload();
+	if ($("div#newspotcatselecttree").dynatree('getTree').reload) {
+		$("div#newspotcatselecttree").dynatree('option', 'initAjax', { url: ('?page=catsjson&category=' + elm[0].value + '&subcatz=' + subcatz + '&disallowstrongnot=1') });
+		$("div#newspotcatselecttree").dynatree('getTree').reload();
+	} 
 } // newspotChangeCategory

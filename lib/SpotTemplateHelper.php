@@ -469,7 +469,7 @@ class SpotTemplateHelper {
 		# escape alle embedded HTML, maar eerst zetten we de spot inhoud om naar 
 		# volledige HTML, dit doen we omdat er soms embedded entities (&#237; e.d.) 
 		# in zitten welke we wel willen behouden.
-		$tmp = htmlentities($tmp);
+		$tmp = htmlentities($tmp, ENT_QUOTES, 'UTF-8');
 		$tmp = html_entity_decode($tmp, ENT_COMPAT, 'UTF-8');
 		
 		# Code gecopieerd vanaf 
@@ -858,11 +858,13 @@ class SpotTemplateHelper {
 
 		$strings['postcomment_invalidhashcash'] = 'Hash is niet goed berekend, ongeldige post';
 		$strings['postcomment_bodytooshort'] = 'Geef een reactie';
+		$strings['postcomment_bodytoolong'] = 'Omschrijving is te lang';
 		$strings['postcomment_ratinginvalid'] = 'Gegeven rating is niet geldig';
 		$strings['postcomment_replayattack'] = 'Replay attack';
-
+		
 		$strings['postspot_invalidhashcash'] = 'Hash is niet goed berekend, ongeldige post';
-		$strings['postspot_bodytooshort'] = 'Geef een reactie';
+		$strings['postspot_bodytooshort'] = 'Geef een omschrijving';
+		$strings['postspot_bodytoolong'] = 'Omschrijving is te lang';
 		$strings['postspot_titletooshort'] = 'Geef een titel';
 		$strings['postspot_replayattack'] = 'Replay attack';
 		$strings['postspot_invalidcategory'] = 'Ongeldige hoofdcategory (%d)';

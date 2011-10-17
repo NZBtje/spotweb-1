@@ -273,7 +273,7 @@ class SpotNntp {
 		 * Post plain usenet message
 		 */
 		function postPlainMessage($newsgroup, $message, $additionalHeaders) {
-			$header = 'Subject: ' . $message['title'] . "\r\n";
+			$header = 'Subject: ' . utf8_decode($message['title']) . "\r\n";
 			$header .= 'Newsgroups: ' . $newsgroup . "\r\n";
 			$header .= 'Message-ID: <' . $message['newmessageid'] . ">\r\n";
 			$header .= "X-Newsreader: SpotWeb v" . SPOTWEB_VERSION . "\r\n";
@@ -330,7 +330,7 @@ class SpotNntp {
 				/* 
 				 * Split the body in parts of 900 characters
 				 */
-				$message['body'] = chunk_split($this->_spotParser->specialZipstr($chunk, 900));
+				$message['body'] = chunk_split($this->_spotParser->specialZipstr($chunk), 900);
 
 				/*
 				 * Create an unique messageid and store it so we can return it
@@ -387,7 +387,7 @@ class SpotNntp {
 			# Process each subcategory and add them to the from header
 			foreach($spot['subcatlist'] as $subcat) {
 				$spotHeader .= $subcat[0] . str_pad(substr($subcat, 1), 2, '0', STR_PAD_LEFT);
-			} # foreach 
+			} # foreach
 			
 			$spotHeader .= '.' . $spot['filesize'];
 			$spotHeader .= '.' . 10; // some kind of magic number?
